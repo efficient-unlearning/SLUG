@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Targeted Unlearning with Layer Unlearning Gradient">
+  <meta name="keywords" content="Machine Unlearning, Foundation Model, Single Layer, Single step">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Targeted Unlearning with Single Layer Unlearning Gradient</title>
+
+  <link rel="icon" href="assets/slug_icon.png" type="image/png">
+  
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" >
+  <link rel="stylesheet" href="./assets/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="./assets/css/index.css">
+
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./assets/js/fontawesome.all.min.js"></script>
+  <script src="./assets/js/bulma-carousel.min.js"></script>
+  <script src="./assets/js/bulma-slider.min.js"></script>
+
+  <style type="text/css">
+    .btn {
+        color:black;
+        text-decoration:none;
+    }
+    .btn:hover {
+        color:gray;
+        text-decoration:none;
+    }
+    table.demo1 {
+        width:100%;
+        text-align:center;
+    }
+    .demo1 img {
+        width:300px;
+    }
+    td.prompt {
+        width:100%;
+        text-align:center;
+        font-family: monospace;
+        font-size:1rem;
+        line-height: normal !important;
+    }
+    td.prompt a {
+        color:#ddd;
+        text-decoration:none;
+    }
+    td.prompt a:hover, td.prompt a.active {
+        color:black;
+        text-decoration:line-through;
+    }
+    .img-stack {
+        position:relative;
+        display: block;
+        width:300px;
+        height: 450px;
+    }
+    .img-stack img {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        z-index: 0;
+    }
+    .img-stack img.active {
+        z-index: 1;
+    }
+    .img-stack .overlay {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+        transition: opacity .2s;
+        z-index: 2;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        background: white;
+    }
+    .carousel {
+        position:relative;
+        width:700px;
+        height:550px;
+        overflow:hidden;
+    }
+    .carousel > table {
+        position:absolute;
+        top: 0px;
+        transition: left 1s;
+        width:700px;
+    }
+    .carousel_table td {
+        text-align:center;
+    }
+    .carousel_table td:nth-child(2) {
+        font-size:150%;
+        padding: .5em;
+    }
+    pre {
+        background-color:#eee;
+        border: 1px solid #999;
+        border-radius: 5px;
+        padding: 10px;
+    white-space: break-spaces;
+    width:80%;
+    text-align:left;
+    }
+    td.gif {
+        width: 33%;
+        font-family: monospace;
+        font-size: 120%;
+    }
+    .dl_link {
+        display: inline-block;
+        padding-right: 6px;
+        padding-left: 6px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+    }
+    .dl_link, .dl_link td {
+        color: black;
+        text-decoration: none;
+        font-size: 120%;
+    }
+    .dl_link, .dl_link table {
+        border-radius: 5px;
+        background-color: none;
+    }
+    .dl_link:hover, .dl_link:hover * {
+        color: #404040 !important;
+        background-color: #d9d9d9 !important;
+    }
+    @media only screen and (max-width: 930px) {
+        .content { width:100% !important; }
+    }
+    </style>
+    <script type="text/javascript">
+      var curr_idx = 0;
+      var num_tables = 6;
+      function move(direction) {
+          if (curr_idx == 0 && direction < 0) {
+        move(num_tables - 1);
+        return;
+          }
+          if (curr_idx == num_tables - 1 && direction > 0) {
+        move(-1 * (num_tables - 1));
+        return;
+          }
+          tables = document.getElementsByClassName("carousel_table");
+          for(var i = 0; i < tables.length; i++) {
+        tables[i].style.left = (parseInt(tables[i].style.left.substring(0, tables[i].style.left.length - 2)) - direction * 700).toString() + "px";
+          }
+          curr_idx += direction;
+      }
+      function hideOverlay(classname) {
+          document.getElementById(classname + "_overlay").style.opacity = "0";
+      }
+      function activate(classname, idx, max) {
+          document.getElementById(classname + "_overlay").style.opacity = "1";
+          setTimeout(function() {
+        for(var i = 1; i <= max; i++) {
+            document.getElementById(classname + "_" + i.toString()).className = "";
+            document.getElementById(classname + "_text_" + i.toString()).className = "";
+        }
+        document.getElementById(classname + "_" + idx.toString()).className = "active";
+        document.getElementById(classname + "_text_" + idx.toString()).className = "active";
+        setTimeout(hideOverlay, 200, classname);
+          }, 200);
+      }
+      var moving = true;
+      var stopCounter = 0;
+      function autoMove(currCounter) {
+          if(moving && currCounter >= stopCounter) {
+        move(1);
+              setTimeout(autoMove, 5000, stopCounter);
+          }
+      }
+      function beginMoving() {
+          moving = true;
+          setTimeout(autoMove, 5000, stopCounter);
+      }
+      function stopMoving() {
+          moving = false;
+          stopCounter++;
+      }
+    </script>
+</head>
+
+
+<body dir="ltr" onload="beginMoving();">
+<div class="content" style="text-align:center;vertical-align:middle;">
+
+<section class="hero">
+  <div class="hero-body" style="padding-bottom: 0;">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-2 publication-title">Targeted Unlearning with Single Layer Unlearning Gradient</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><a href="https://zikuicai.github.io/">Zikui Cai</a><sup>1,2</sup>,</span>
+            <span class="author-block"><a href="https://ytengtan.github.io/">Yaoteng Tan</a><sup>1</sup>,</span>
+            <span class="author-block"><a href="https://intra.ece.ucr.edu/~sasif/">M. Salman Asif</a><sup>1</sup></span>
+          </div>
+
+          <div class="is-size-5 publication-authors" style="padding-bottom: 0px;">
+            <span class="author-block"><sup>1</sup>University of California, Riverside</span> <br>
+            <span class="author-block"><sup>2</sup>University of Maryland, College Park</span>
+          </div>
+          
+          <!-- <div class="is-size-6 publication-authors">
+            <span class="author-block">
+              <sup>*</sup>Equal contribution; 
+              <sup>⚑</sup>Project lead; 
+              <sup>†</sup>Corresponding authors.
+            </span>
+          </div> -->
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+
+
+      <div class="column has-text-centered">
+        <div class="publication-links">
+          <!-- arXiv Link. -->
+          <span class="link-block">
+            <a href="https://arxiv.org/abs/2407.11867"
+                class="external-link button is-normal is-rounded is-dark">
+              <span class="icon">
+                  <i class="ai ai-arxiv"></i>
+              </span>
+              <span>arXiv</span>
+            </a>
+          </span>
+          <!-- Code Link. -->
+          <span class="link-block">
+            <a href="https://github.com/CSIPlab/SLUG"
+                class="external-link button is-normal is-rounded is-dark">
+              <span class="icon">
+                  <i class="fa fa-github"></i>
+              </span>
+              <span>Code</span>
+            </a>
+          </span>
+          
+          <!-- Demo Link. (TBD) -->
+          <span class="link-block">
+            <a href="https://huggingface.co/spaces/ytan-ucr/slug_demo"
+                class="external-link button is-normal is-rounded is-dark">
+                <span class="icon">
+                  <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="Hugging Face Logo">
+                </span>
+              <span>Demo</span>
+            </a>
+          </span>
+
+        </div>
+      </div>
+    
+    </div>
+  </div>
+</section>
+
+
+
+<section class="section hero">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            The unauthorized generation of privacy-related and copyright-infringing content using generative-AI 
+            is becoming a significant concern for society, raising ethical, legal, and privacy issues that demand urgent attention. 
+            Recently, machine unlearning techniques have arisen that attempt to eliminate the influence of sensitive content used during model training, 
+            but they often require extensive updates in the model, reduce the utility of the models for unrelated content, 
+            and/or incur substantial computational costs. In this work, we propose a novel and efficient method called Single Layer Unlearning Gradient (SLUG), 
+            that can unlearn targeted information by updating a single targeted layer of a model using a one-time gradient computation. 
+            We introduce two metrics: layer importance and gradient alignment, to identify the appropriate layers for unlearning targeted information. 
+            Our method is highly modular and enables selective removal of multiple concepts from the generated outputs of widely used foundation models 
+            (e.g., CLIP), generative models (e.g., Stable Diffusion) and Vision-Language models. 
+            Our method shows effectiveness on a broad spectrum of concepts ranging from concrete (e.g., celebrity name, intellectual property figure, and object) 
+            to abstract (e.g., novel concept and artistic style).
+          </p>
+        </div>
+      </div>
+    </div>
+</section>
+
+
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Background</h2>
+          <div class="content has-text-justified">
+            <!-- <img src="./assets/project/slug/background.png"
+                 class="interpolation-image"
+                 alt="background image."/>
+            <br><br> -->
+            
+            <p> <b>Modern Generative AI</b> raises significant concerns, including privacy violations of celebrities, 
+              copyright-infringing content generation, artistic style plagiarism, and the creation of unsafe-for-work content. 
+              <b>Machine Unlearning</b> emerges as a promising solution, facing <b>three core challenges:</b> 
+              1) removing unwanted concepts from models effectively, 2) retaining the model's utility to preserve functionality, 
+              and 3) ensuring computational efficiency to minimize resource demands. 
+            </p> 
+              
+            <p> <b>Existing methods struggle to meet all three challenges.</b> Retraining the model from scratch on a scrutinized dataset 
+              achieves exact unlearning but is computationally expensive and inflexible for new unlearning requests. 
+              Gradient ascent updates model weights in a reverse direction relative to the target concept, which can unlearn effectively 
+              but risks over-unlearning and utility degradation. Saliency-based methods identify and update only critical model weights, 
+              using thresholds informed by forget-loss gradients. While balancing unlearning and utility retention, these methods are 
+              computationally intensive due to iterative gradient calculations and require extensive hyperparameter tuning. 
+            </p> 
+                
+            <p> <b>In contrast, SLUG pushes the saliency-based approach to new levels of efficiency.</b> 
+              It requires only a single gradient calculation and a one-step update to a single layer 
+              to achieve effective unlearning, dramatically reducing computational costs while maintaining performance. 
+            </p>
+          </div>
+      </div>
+    </div>
+</section>
+
+
+<section class="section hero">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Our Method: Single Layer Unlearning Gradient</h2>
+          <div class="content has-text-justified">
+            <img src="./assets/project/slug/slug-framework.png"
+                 class="interpolation-image"
+                 alt="Framework image."/>
+            <p>Fig. 1: The unlearning framework of our proposed method, Single Layer Unlearning Gradient (SLUG).</p>
+            <br>
+            <p>
+              Given an unlearning query, such as removing an identity like "<i>Elon Musk</i>", 
+              we first curate or generate a forget set containing relevant data 
+              and a retain set with data points we want to preserve. 
+              Using these datasets, we calculate and store the model gradients. 
+              Based on these gradients, we identify the important layers to update for unlearning. 
+              We then take a step along the forget gradients of a single layer and evaluate the model's unlearning performance. 
+              To determine a suitable step size λ, we employ a binary search. 
+              After unlearning, the specified concepts are effectively erased while retaining the model's overall utility.
+            </p>
+          </div>
+      </div>
+    </div>
+</section>
+
+
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">How does Single Layer Update Work?</h2>
+          <div class="content has-text-justified">
+            Our extensive analysis on CLIP zero-shot classification demonstrate that a single unlearning 
+            update on one layer, which is identified by our <i>layer importance</i> and <i>gradient alignment</i> metrics, 
+            is sufficient to make the model forget a targeted concept while preserving 
+            zero-shot classification accuracy close to that of the original CLIP model.
+            <br><br>
+            <img src="./assets/project/slug/analyze.png"
+                 class="interpolation-image"
+                 alt="Teaser image."/>
+            <p>Fig. 2: Pareto-fronts and step-size analysis of one-step update the vision/language parts of CLIP.</p>
+            <br>
+            <p>
+              <b>Main takeaway:</b> with a properly selected unlearning step size, one-step update on one of the pareto-optimal layers, 
+              in terms of high concept importance and low forget-retain gradient alignment, can achieve good unlearning and utility retention.
+            </p>
+          </div>
+      </div>
+    </div>
+</section>
+
+
+<section class="section hero">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Results</h2>
+          <div class="content has-text-justified">
+            Despite being extremely efficient, SLUG achieves effective unlearning while maintaining a good balance with model utility retention.
+            Besides, SLUG is scalable across different foundation models for different tasks (e.g., CLIP, Stable Diffusion, VLMs) 
+            and flexible enough to jointly unlearn multiple identities. Below, we present some of the remarkable results achieved by SLUG.
+          </div>
+          <h3 class="title is-4">Examples on CLIP zero-shot classification</h3>
+          <div class="content has-text-justified">
+            <div class="columns is-centered">
+              <div class="column">
+                <div class="content has-text-justified">
+                  <img src="./assets/project/slug/clip-0.png"
+                      class="interpolation-image"
+                      alt="CLIP cosine similarity matrix."/>
+                  <p>Fig.3: CLIP original image-text conine similarity matrix.</p>
+                </div>
+              </div>
+
+              <div class="column">
+                <div class="content has-text-justified">
+                  <img src="./assets/project/slug/clip-1.png"
+                      class="interpolation-image"
+                      alt="CLIP cosine similarity matrix."/>
+                  <p>
+                    Fig.4: Unlearning "<i>Elon Musk</i>".
+                  </p>
+                </div>
+              </div>
+
+              <div class="column">
+                <div class="content has-text-justified">
+                  <img src="./assets/project/slug/clip-2.png"
+                      class="interpolation-image"
+                      alt="CLIP cosine similarity matrix."/>
+                  <p>
+                    Fig.5: Unlearning "<i>Elon Musk</i>" and "<i>Mark Zukerburg</i>".
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p>
+              <b>Main takeaway:</b> SLUG can effectively unlearn multiple targeted identities from CLIP. 
+              By updating a selected layer with a single gradient for each distinct identity, it introduces modularity into the unlearning process.
+            </p>
+        </div>
+
+          <h3 class="title is-4">Examples on Stable Diffusion Image Generation</h3>
+          <div class="content has-text-justified">
+            <img src="./assets/project/slug/sd-example-copyright.png"
+                class="interpolation-image"
+                alt="Stable Diffusion example: copyright."/>
+            <br>
+            <p>Fig. 6: Unlearning copyright-protected intellectual property ("<i>Mickey Mouse</i>" and "<i>Iron Man</i>") from <a href="https://huggingface.co/stabilityai/stable-diffusion-2-1"> Stable Diffusion-v2.1</a> model.</p>
+            <p>
+              After unlearning with SLUG, Stable Diffusion fails to generate images associated with the targeted copyright-protected figures, 
+              while the overall image generation utility of the original model is largely preserved.
+            </p>
+          </div>
+
+
+          <h3 class="title is-4">Examples on Vision-Language Models</h3>
+          <div class="content has-text-justified">
+            <img src="./assets/project/slug/vlm-example-1.png"
+                class="interpolation-image"
+                alt="Vision-Language Model."/>
+                <p>
+                  Fig. 7: Unlearning the celebrity example "<i>Elon Musk</i>" from <a href="https://huggingface.co/llava-hf/llava-1.5-7b-hf"> LLaVA-v1.5-7B </a> model.
+                </p>                
+            <br>
+            <img src="./assets/project/slug/vlm-example-2.png"
+                class="interpolation-image"
+                alt="Vision-Language Model."/>
+                <p>
+                  Fig. 8: Unlearning the celebrity example  "<i>Taylor Swift</i>" from <a href="https://huggingface.co/llava-hf/llava-1.5-7b-hf"> LLaVA-v1.5-7B </a> model.
+                </p>
+            <p>
+              While targeted identities are mapped to wrong name or gender after the unlearning, 
+              the other celebrities identification remain unaffected. 
+              Besides, model's robustness against style distribution shift is also preserved.
+              SLUG can effectively unlearn targeted identities while preserving the model’s utility on vision-language tasks, 
+              maintains high accuracy and functionality across a range of tasks, ensuring minimal impact on the model's overall utility.
+            </p>
+          </div>
+
+
+          <h3 class="title is-4">More Results</h3>
+          <div class="content has-text-justified">
+            <p> Comprehensive results on <b>quantitative evaluations</b>, <b>multi-concept unlearning</b>, <b>unlearning of different concepts</b>, 
+              and <b>additional qualitative samples</b> for Stable Diffusion and VLMs can be found in the main text and the supplementary material of 
+              <a href="https://arxiv.org/abs/2407.11867">our paper</a>.
+            </p>
+          </div>
+
+      </div>
+    </div>
+</section>
+
+
+
+<!-- <section class="section hero is-light" id="BibTeX">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">BibTeX</h2>
+          <div class="content has-text-justified">
+            Our extensive analysis on CLIP zero-shot classification demonstrate that a single unlearning 
+            update on one layer, which is identified by our <i>layer importance</i> and <i>gradient alignment</i> metrics, 
+            is sufficient to make the model forget a targeted concept while preserving 
+            zero-shot classification accuracy close to that of the original CLIP model.
+            <br><br>
+            <img src="./assets/project/slug/analyze.png"
+                 class="interpolation-image"
+                 alt="Teaser image."/>
+            <p>Fig. 2: Pareto-fronts and step-size analysis of one-step update the vision/language parts of CLIP.</p>
+            <br>
+            <p>
+              <b>Main takeaway:</b> with a properly selected unlearning step size, one-step update on one of the pareto-optimal layers, 
+              in terms of high concept importance and low forget-retain gradient alignment, can achieve good unlearning and utility retention.
+            </p>
+          </div>
+      </div>
+    </div>
+</section> -->
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title">BibTeX</h2>
+          <div class="content has-text-justified">
+            If you find our work helpful for your research, please consider citing us!
+          </div>
+        </div>
+    </div>
+  </div>  
+    <br>
+    <pre style="display: inline-block;"><code>
+      @article{cai2024unlearning,
+        title={Unlearning Targeted Information via Single Layer Unlearning Gradient},
+        author={Cai, Zikui and Tan, Yaoteng and Asif, M Salman},
+        journal={arXiv preprint arXiv:2407.11867},
+        year={2024}
+      }
+    </code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            Acknowlegement: web page template from <a
+            href="https://nerfies.github.io/">Park et al</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+</div>
+</body>
+</html>
