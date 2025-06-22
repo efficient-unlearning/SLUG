@@ -175,7 +175,6 @@ body {
 }
 
 
-/* Make slider narrower and centered */
 #interpolation-slider {
   width: 100%;             /* Adjust slider length */
   margin: 1rem auto 0 auto; /* Top auto-centered */
