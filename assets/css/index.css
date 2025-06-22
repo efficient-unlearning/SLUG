@@ -129,12 +129,12 @@ body {
 
 
 .interpolation-panel {
-  background: #f5f5f5;
+  background: #ffffff;
   border-radius: 10px;
 }
 
 .interpolation-panel .interpolation-image {
-  width: 100%;
+  width: 60%;
   border-radius: 5px;
 }
 
@@ -154,4 +154,30 @@ body {
 }
 #interpolation-image-wrapper img {
   border-radius: 5px;
+}
+
+#interpolation-image-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;  
+}
+
+#interpolation-image-wrapper img {
+  border-radius: 5px;
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
+
+/* Make slider narrower and centered */
+#interpolation-slider {
+  width: 100%;             /* Adjust slider length */
+  margin: 1rem auto 0 auto; /* Top auto-centered */
+
 }

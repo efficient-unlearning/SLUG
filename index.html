@@ -30,9 +30,9 @@
 
   
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script defer src="./assets/js/fontawesome.all.min.js"></script>
   <script src="./assets/js/bulma-carousel.min.js"></script>
   <script src="./assets/js/bulma-slider.min.js"></script>
+  <script src="./assets/js/index.js"></script>
 
   <style type="text/css">
     .btn {
@@ -265,12 +265,12 @@
             </a>
           </span>
           
-          <!-- Demo Link. (TBD) -->
+          <!-- Demo Link. -->
           <span class="link-block">
-            <a href="https://huggingface.co/spaces/ytan-ucr/slug_demo"
+            <a href="https://colab.research.google.com/drive/1sjLWKPIXi961KPV-t1ugIdwaF7bdBjt7?usp=sharing"
                 class="external-link button is-normal is-rounded is-dark">
                 <span class="icon">
-                  <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="Hugging Face Logo">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Colaboratory_SVG_Logo.svg" alt="colab Logo">
                 </span>
               <span>Demo</span>
             </a>
@@ -316,10 +316,6 @@
       <div class="column is-four-fifths">
         <h2 class="title is-3">Background</h2>
           <div class="content has-text-justified">
-            <!-- <img src="./assets/project/slug/background.png"
-                 class="interpolation-image"
-                 alt="background image."/>
-            <br><br> -->
             
             <p> <b>Modern Generative AI</b> raises significant concerns, including privacy violations of celebrities, 
               copyright-infringing content generation, artistic style plagiarism, and the creation of unsafe-for-work content. 
@@ -394,6 +390,50 @@
               in terms of high concept importance and low forget-retain gradient alignment, can achieve good unlearning and utility retention.
             </p>
           </div>
+        
+        <h2 class="title is-4">Single Layer Update with different Step-sizes</h2>
+          <div class="content has-text-justified">
+            Intuitively, a larger step-size incurs larger update over the model.
+            Here, we demonstrate the effect of updating single layer with different step-sizes for unlearning "<i>Elon Musk</i>" on <a href="https://huggingface.co/stabilityai/stable-diffusion-2-1"> Stable Diffusion-v2.1</a>.
+            <br>
+            <br>
+            Use the slider below to adjust the step size from 0 to 5.
+            This allows you to observe the effects of increasing unlearning strength on image generation by Stable Diffusion. 
+            The model was progressively unlearned with respect to the following prompts: <i>"A portrait photo of Elon Musk", "Elon Musk sitting in the car", "A portrait photo of Mark Zuckerberg",
+            "A portrait photo of Taylor Swift", and "A sea turtle in the ocean".</i>
+            <br><br>
+            
+            <div class="columns is-vcentered interpolation-panel">
+              <div class="column is-3 has-text-centered">
+                <img src="./assets/project/stepsize/init_elon.png"
+                    class="interpolation-image"
+                    alt="Interpolate start reference image."/>
+                <p>Pre-unlearning</p>
+              </div>
+              <div class="column interpolation-video-column">
+                <div id="interpolation-image-wrapper">
+                  Loading...
+                </div>
+                <input class="slider is-fullwidth is-large is-info"
+                      id="interpolation-slider"
+                      step="1" min="0" max="100" value="0" type="range">
+                <p>Unlearn "Elon Musk" with different step-sizes</p>
+              </div>
+              <div class="column is-3 has-text-centered">
+                <img src="./assets/project/stepsize/end_elon.png"
+                    class="interpolation-image"
+                    alt="Interpolation end reference image."/>
+                <p class="is-bold">Over unlearning</p>
+              </div>        
+            </div>
+
+            <p>
+              As the step size increases, you can observe how the generated images, even those associated with non-targeted concepts, gradually diverge from their original meanings, indicating 
+              <b> over-editing (over-unlearning).</b>
+              To select an appropriate step size, we employ binary search to balance the degree of unlearning with the retention of overall model utility during the update process.
+            </p>
+          </div>     
+        
       </div>
     </div>
 </section>
@@ -403,7 +443,7 @@
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column is-four-fifths">
-        <h2 class="title is-3">Results</h2>
+        <h2 class="title is-3">Main Results</h2>
           <div class="content has-text-justified">
             Despite being extremely efficient, SLUG achieves effective unlearning while maintaining a good balance with model utility retention.
             Besides, SLUG is scalable across different foundation models for different tasks (e.g., CLIP, Stable Diffusion, VLMs) 
