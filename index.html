@@ -292,17 +292,17 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            The unauthorized generation of privacy-related and copyright-infringing content using generative-AI 
-            is becoming a significant concern for society, raising ethical, legal, and privacy issues that demand urgent attention. 
-            Recently, machine unlearning techniques have arisen that attempt to eliminate the influence of sensitive content used during model training, 
-            but they often require extensive updates in the model, reduce the utility of the models for unrelated content, 
-            and/or incur substantial computational costs. In this work, we propose a novel and efficient method called Single Layer Unlearning Gradient (SLUG), 
-            that can unlearn targeted information by updating a single targeted layer of a model using a one-time gradient computation. 
-            We introduce two metrics: layer importance and gradient alignment, to identify the appropriate layers for unlearning targeted information. 
-            Our method is highly modular and enables selective removal of multiple concepts from the generated outputs of widely used foundation models 
-            (e.g., CLIP), generative models (e.g., Stable Diffusion) and Vision-Language models. 
-            Our method shows effectiveness on a broad spectrum of concepts ranging from concrete (e.g., celebrity name, intellectual property figure, and object) 
-            to abstract (e.g., novel concept and artistic style).
+            Machine unlearning methods aim to remove sensitive or unwanted content from trained models, 
+            but typically demand extensive model updates at significant computational cost while potentially degrading model performance on both related and unrelated tasks. 
+            We propose Single Layer Unlearning Gradient (SLUG) as an efficient method to unlearn targeted information 
+            by updating a single critical layer using a one-time gradient computation. 
+            SLUG uses layer importance and gradient alignment metrics to identify the optimal layer for targeted 
+            information removal while preserving the model utility. 
+            We demonstrate the effectiveness of SLUG for CLIP, Stable Diffusion, and vision-language models (VLMs) in removing concrete 
+            (e.g., identities and objects) and abstract concepts (e.g., artistic styles). 
+            On the UnlearnCanvas benchmark, SLUG achieves comparable unlearning performance to existing methods while 
+            requiring significantly less computational resources. 
+            Our proposed approach offers a practical solution for targeted unlearning that is computationally efficient and precise. 
           </p>
         </div>
       </div>
